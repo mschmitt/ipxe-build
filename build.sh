@@ -60,6 +60,34 @@ cp -v "${builddir}/images/ipxe.efi" /var/www/html/ipxe/ipxe.efi
 set +e
 
 # Assemble hybrid EFI/BIOS bootable harddisk image
+
+function cleanup(){
+	echo "cleanup mount point ${mount}"
+	mount | grep ${loopdev}
+	if [[ $? -eq 0 ]]
+	then
+		sudo umount "${mount}" && rmdir "${mount}"
+		if [[ $? -ne 0 ]]
+		then
+			echo "Failed to cleanup temp mount point ${mount}"
+			exit 1
+		fi
+	fi
+
+	echo "cleanup loop device ${loopdev}"
+	sudo losetup -l | grep ${loopdev}
+	if [[ $? -eq 0 ]]
+	then
+		sudo losetup -d ${loopdev}
+		if [[ $? -ne 0 ]]
+		then
+			echo "Failed to cleanup loop device ${loopdev}"
+			exit 1
+		fi
+	fi
+}
+trap cleanup INT QUIT TERM EXIT
+
 echo "create file ${hddimg}"
 dd if=/dev/zero of="${hddimg}" bs=1M count=16
 if [[ $? -ne 0 ]]
@@ -83,60 +111,29 @@ then
 	exit 1
 fi
 
-echo "cleanup mount point"
-mount | grep /dev/loop7
-if [[ $? -eq 0 ]]
-then
-	sudo umount "${mount}" && rmdir "${mount}"
-	if [[ $? -ne 0 ]]
-	then
-		echo "Failed to cleanup temporary mount point."
-		exit 1
-	fi
-fi
-
-echo "cleanup loop device"
-sudo losetup -l | grep /dev/loop7
-if [[ $? -eq 0 ]]
-then
-	sudo losetup -d /dev/loop7
-	if [[ $? -ne 0 ]]
-	then
-		echo "Failed at loop device cleanup."
-		exit 1
-	fi
-fi
 
 echo "create loop device"
-sudo losetup /dev/loop7 "${hddimg}"
+loopdev=$(sudo losetup --find --show --partscan "${hddimg}")
 if [[ $? -ne 0 ]]
 then
 	echo "Failed at loop device creation."
 	exit 1
 fi
 
-echo "scan partitions"
-sudo partprobe /dev/loop7
-if [[ $? -ne 0 ]]
-then
-	echo "Failed at scanning partitions."
-	exit 1
-fi
-
-echo "create filesystem"
-sudo mkfs.vfat -n ESP /dev/loop7p2
+echo "create filesystem on ${loopdev}p2"
+sudo mkfs.vfat -n ESP ${loopdev}p2
 if [[ $? -ne 0 ]]
 then
 	print "Failed at creating loop device filesystem."
 	exit 1
 fi
 
-echo "mount filesystem to ${mount}"
+echo "mount ${loopdev}p2 to ${mount}"
 mkdir -p "${mount}"
-sudo mount /dev/loop7p2 "${mount}" -o uid=$UID
+sudo mount ${loopdev}p2 "${mount}" -o uid=$UID
 if [[ $? -ne 0 ]]
 then
-	echo "Failed at loopback mounting filesystem to ${mount}."
+	echo "Failed mount ${loopdev}p2 to ${mount}."
 	exit 1
 fi
 
@@ -193,12 +190,12 @@ else
 	exit 1
 fi
 
-echo "copy syslinux MBR from $mbr"
-sudo dd bs=440 count=1 conv=notrunc if="${mbr}" of=/dev/loop7
+echo "copy syslinux MBR from $mbr to ${loopdev}"
+sudo dd bs=440 count=1 conv=notrunc if="${mbr}" of=${loopdev}
 
 sudo umount "${mount}"
 sudo rmdir "${mount}"
-sudo losetup -d /dev/loop7
+sudo losetup -d ${loopdev}
 
 # Done assembling hybrid EFI/BIOS bootable harddisk image
 
