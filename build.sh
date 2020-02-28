@@ -3,7 +3,7 @@
 MAKEOPTS="-j 4"
 builddir="$(dirname "$(readlink -f "$0")")"
 srcdir="${builddir}/../ipxe/src/"
-menu="${builddir}/stage1.cfg"
+embed="${builddir}/stage1_embed.cfg"
 hddimg="${builddir}/images/ipxe.hdd.img"
 mount="${builddir}/mnt"
 
@@ -11,46 +11,55 @@ build_host=$(hostname --fqdn)
 build_date=$(date '+%F %T')
 build_rev=$(git rev-parse HEAD)
 
+# Replicate our own customizations into ipxe compile environment
 cp -v "${builddir}/config/general.h" "${srcdir}/config/local/general.h"
 cp -v "${builddir}/config/branding.h" "${srcdir}/config/local/branding.h"
 sed -i "s/_buildinfo_/${build_date} ${build_host}\\\n${build_rev}/" \
 	"${srcdir}/config/local/branding.h"
 set -e
 
+# Build the PXE binary
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.pxe EMBED="${menu}"
+make -C "${srcdir}" bin/ipxe.pxe EMBED="${embed}"
 cp -v "${srcdir}/bin/ipxe.pxe" "${builddir}/images/ipxe.pxe"
 sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
 
+# Build the UNDI pxe binary
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/undionly.kpxe EMBED="${menu}"
+make -C "${srcdir}" bin/undionly.kpxe EMBED="${embed}"
 cp -v "${srcdir}/bin/undionly.kpxe" "${builddir}/images/undionly.kpxe"
 sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
 
+# Build the Linux Kernel type image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.lkrn EMBED="${menu}"
+make -C "${srcdir}" bin/ipxe.lkrn EMBED="${embed}"
 cp -v "${srcdir}/bin/ipxe.lkrn" "${builddir}/images/ipxe.lkrn"
 cp -v "${builddir}/images/ipxe.lkrn" /var/www/html/ipxe/
 
+# Build the ISO image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.iso EMBED="${menu}"
+make -C "${srcdir}" bin/ipxe.iso EMBED="${embed}"
 cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-cdrom.iso"
 cp -v "${builddir}/images/ipxe-cdrom.iso" /var/www/html/ipxe/
 
+# Build the USB image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.usb EMBED="${menu}"
+make -C "${srcdir}" bin/ipxe.usb EMBED="${embed}"
 cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-usb.img"
 cp -v "${builddir}/images/ipxe-usb.img" /var/www/html/ipxe/
 
+# Disable Linux Kernel type image so we can build the EFI image
 sed -i '/IMAGE_BZIMAGE/d' "${srcdir}/config/local/general.h"
 
+# Build EFI image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin-x86_64-efi/ipxe.efi EMBED="${menu}"
+make -C "${srcdir}" bin-x86_64-efi/ipxe.efi EMBED="${embed}"
 cp -v "${srcdir}/bin-x86_64-efi/ipxe.efi" "${builddir}/images/ipxe.efi"
 cp -v "${builddir}/images/ipxe.efi" /var/www/html/ipxe/ipxe.efi
 
 set +e
 
+# Assemble hybrid EFI/BIOS bootable harddisk image
 echo "create file ${hddimg}"
 dd if=/dev/zero of="${hddimg}" bs=1M count=16
 if [[ $? -ne 0 ]]
@@ -164,14 +173,6 @@ LABEL ipxe
  KERNEL ipxe.lkrn
 End
 
-#echo "copy syslinux files"
-#cp -v -r /usr/lib/syslinux/modules/bios/*.c32 "${mount}/syslinux/"
-#if [[ $? -ne 0 ]]
-#then
-#	echo "Failed at copy syslinux files."
-#	exit 1
-#fi
-
 echo "install syslinux"
 sudo extlinux --install "${mount}/syslinux/" 
 if [[ $? -ne 0 ]]
@@ -200,8 +201,12 @@ sudo umount "${mount}"
 sudo rmdir "${mount}"
 sudo losetup -d /dev/loop7
 
+# Done assembling hybrid EFI/BIOS bootable harddisk image
+
+# Additionally convert to qcow2 for Vbox/Qemu EFI booting
 qemu-img convert -f raw -O qcow2 "${hddimg}" "$(dirname "${hddimg}")/ipxe.hdd.qcow2"
 
+# Copy to my synced folder
 if [[ -d  "${HOME}/Sync/Workdocs/iPXE" ]]
 then
 	cp -r -v "${builddir}/images" "${HOME}/Sync/Workdocs/iPXE"
