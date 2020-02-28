@@ -2,7 +2,7 @@
 
 MAKEOPTS="-j 4"
 builddir="$(dirname "$(readlink -f "$0")")"
-srcdir="${builddir}/../src/"
+srcdir="${builddir}/../ipxe/src/"
 menu="${builddir}/stage1.cfg"
 hddimg="${builddir}/images/ipxe.hdd.img"
 mount="${builddir}/mnt"
@@ -201,3 +201,8 @@ sudo rmdir "${mount}"
 sudo losetup -d /dev/loop7
 
 qemu-img convert -f raw -O qcow2 "${hddimg}" "$(dirname "${hddimg}")/ipxe.hdd.qcow2"
+
+if [[ -d  "${HOME}/Sync/Workdocs/iPXE" ]]
+then
+	cp -r -v "${builddir}/images" "${HOME}/Sync/Workdocs/iPXE"
+fi
