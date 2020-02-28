@@ -196,7 +196,6 @@ fi
 echo "copy syslinux MBR from $mbr"
 sudo dd bs=440 count=1 conv=notrunc if="${mbr}" of=/dev/loop7
 
-sudo find "${mount}" > /tmp/1
 sudo umount "${mount}"
 sudo rmdir "${mount}"
 sudo losetup -d /dev/loop7
