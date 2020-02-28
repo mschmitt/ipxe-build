@@ -89,6 +89,10 @@ function cleanup(){
 trap cleanup INT QUIT TERM EXIT
 
 echo "create file ${hddimg}"
+if [[ -e "${hddimg}" ]]
+then
+	chmod 644 "${hddimg}"
+fi
 dd if=/dev/zero of="${hddimg}" bs=1M count=16
 if [[ $? -ne 0 ]]
 then
@@ -196,11 +200,17 @@ sudo dd bs=440 count=1 conv=notrunc if="${mbr}" of=${loopdev}
 sudo umount "${mount}"
 sudo rmdir "${mount}"
 sudo losetup -d ${loopdev}
+chmod 444 "${hddimg}"
 
 # Done assembling hybrid EFI/BIOS bootable harddisk image
 
 # Additionally convert to qcow2 for Vbox/Qemu EFI booting
+if [[ -e "$(dirname "${hddimg}")/ipxe.hdd.qcow2" ]]
+then
+	chmod 644 "$(dirname "${hddimg}")/ipxe.hdd.qcow2"
+fi
 qemu-img convert -f raw -O qcow2 "${hddimg}" "$(dirname "${hddimg}")/ipxe.hdd.qcow2"
+chmod 444 "$(dirname "${hddimg}")/ipxe.hdd.qcow2"
 
 # Copy to my synced folder
 if [[ -d  "${HOME}/Sync/Workdocs/iPXE" ]]
