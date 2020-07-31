@@ -19,7 +19,7 @@ cp -v "${builddir}/config/branding.h" "${srcdir}/config/local/branding.h"
 sed -i "s/_buildinfo_/${build_date} ${build_host}\\\n${build_rev}/" \
 	"${srcdir}/config/local/branding.h"
 # Hard-code our build info into iPXE embedded menu
-sed "/^set ipxe_builddate:string /s/^.*$/set ipxe_builddate:string \"${build_date}\"/" < "${embed_template}" > "${embed}"
+sed "/^set ipxe_builddate:string /s/^.*$/set ipxe_builddate:string ${build_date}/" < "${embed_template}" > "${embed}"
 set -e
 
 # Build the PXE binary
