@@ -10,7 +10,7 @@ hddimg="${builddir}/images/ipxe.hdd.img"
 mount="${builddir}/mnt"
 
 build_host=$(hostname --fqdn)
-build_date=$(date '+%F %T')
+build_date=$(date '+%F %T %Z')
 build_rev=$(git rev-parse HEAD)
 
 # Replicate our own customizations into ipxe compile environment
