@@ -1,6 +1,7 @@
 #!/bin/bash
 
 MAKEOPTS="-j 4"
+debug=tls:0,x509:0,httpcore:0,tcp:0,ipv4:0,ipv6:0,arp:0,ndp:0,netdevice:0,pci:0
 builddir="$(dirname "$(readlink -f "$0")")"
 srcdir="${builddir}/../ipxe/src/"
 embed="${builddir}/stage1_embed.cfg"
@@ -16,35 +17,37 @@ cp -v "${builddir}/config/general.h" "${srcdir}/config/local/general.h"
 cp -v "${builddir}/config/branding.h" "${srcdir}/config/local/branding.h"
 sed -i "s/_buildinfo_/${build_date} ${build_host}\\\n${build_rev}/" \
 	"${srcdir}/config/local/branding.h"
+# Hard-code our build info into iPXE embedded menu
+sed -i "/^set ipxe_builddate:string /s/^.*$/set ipxe_builddate:string \"${build_date}\"/" "${embed}"
 set -e
 
 # Build the PXE binary
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.pxe EMBED="${embed}"
+make -C "${srcdir}" bin/ipxe.pxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.pxe" "${builddir}/images/ipxe.pxe"
 sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
 
 # Build the UNDI pxe binary
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/undionly.kpxe EMBED="${embed}"
+make -C "${srcdir}" bin/undionly.kpxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/undionly.kpxe" "${builddir}/images/undionly.kpxe"
 sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
 
 # Build the Linux Kernel type image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.lkrn EMBED="${embed}"
+make -C "${srcdir}" bin/ipxe.lkrn EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.lkrn" "${builddir}/images/ipxe.lkrn"
 cp -v "${builddir}/images/ipxe.lkrn" /var/www/html/ipxe/
 
 # Build the ISO image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.iso EMBED="${embed}"
+make -C "${srcdir}" bin/ipxe.iso EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-cdrom.iso"
 cp -v "${builddir}/images/ipxe-cdrom.iso" /var/www/html/ipxe/
 
 # Build the USB image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin/ipxe.usb EMBED="${embed}"
+make -C "${srcdir}" bin/ipxe.usb EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-usb.img"
 cp -v "${builddir}/images/ipxe-usb.img" /var/www/html/ipxe/
 
@@ -53,7 +56,7 @@ sed -i '/IMAGE_BZIMAGE/d' "${srcdir}/config/local/general.h"
 
 # Build EFI image
 make -C "${srcdir}" clean
-make -C "${srcdir}" bin-x86_64-efi/ipxe.efi EMBED="${embed}"
+make -C "${srcdir}" bin-x86_64-efi/ipxe.efi EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin-x86_64-efi/ipxe.efi" "${builddir}/images/ipxe.efi"
 cp -v "${builddir}/images/ipxe.efi" /var/www/html/ipxe/ipxe.efi
 
