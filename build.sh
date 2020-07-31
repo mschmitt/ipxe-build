@@ -4,7 +4,8 @@ MAKEOPTS="-j 4"
 debug=tls:0,x509:0,httpcore:0,tcp:0,ipv4:0,ipv6:0,arp:0,ndp:0,netdevice:0,pci:0
 builddir="$(dirname "$(readlink -f "$0")")"
 srcdir="${builddir}/../ipxe/src/"
-embed="${builddir}/stage1_embed.cfg"
+embed_template="${builddir}/stage1_embed.cfg"
+embed="${builddir}/.stage1_embed.cfg.build"
 hddimg="${builddir}/images/ipxe.hdd.img"
 mount="${builddir}/mnt"
 
@@ -18,7 +19,7 @@ cp -v "${builddir}/config/branding.h" "${srcdir}/config/local/branding.h"
 sed -i "s/_buildinfo_/${build_date} ${build_host}\\\n${build_rev}/" \
 	"${srcdir}/config/local/branding.h"
 # Hard-code our build info into iPXE embedded menu
-sed -i "/^set ipxe_builddate:string /s/^.*$/set ipxe_builddate:string \"${build_date}\"/" "${embed}"
+sed "/^set ipxe_builddate:string /s/^.*$/set ipxe_builddate:string \"${build_date}\"/" < "${embed_template}" > "${embed}"
 set -e
 
 # Build the PXE binary
