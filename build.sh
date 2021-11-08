@@ -1,5 +1,13 @@
 #!/bin/bash
 
+set -o errexit
+function errorexit() {
+        trap - ERR
+        printf "Error on line %s\n" "$(caller)"
+        exit 1
+}
+trap errorexit ERR
+
 MAKEOPTS="-j 4"
 debug=tls:0,x509:0,httpcore:0,tcp:0,ipv4:0,ipv6:0,arp:0,ndp:0,netdevice:0,pci:0
 builddir="$(dirname "$(readlink -f "$0")")"
@@ -49,7 +57,7 @@ cp -v "${builddir}/images/ipxe-cdrom.iso" /var/www/html/ipxe/
 # Build the USB image
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.usb EMBED="${embed}" DEBUG=${debug}
-cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-usb.img"
+cp -v "${srcdir}/bin/ipxe.usb" "${builddir}/images/ipxe-usb.img"
 cp -v "${builddir}/images/ipxe-usb.img" /var/www/html/ipxe/
 
 # Disable Linux Kernel type image so we can build the EFI image
