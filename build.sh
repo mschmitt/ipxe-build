@@ -37,13 +37,13 @@ set -e
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.pxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.pxe" "${builddir}/images/ipxe.pxe"
-[[ -d /srv/tftp ] && sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
+[[ -d /srv/tftp ]] && sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
 
 # Build the UNDI pxe binary
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/undionly.kpxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/undionly.kpxe" "${builddir}/images/undionly.kpxe"
-[[ -d /srv/tftp ] && sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
+[[ -d /srv/tftp ]] && sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
 
 # Build the Linux Kernel type image
 make -C "${srcdir}" clean
