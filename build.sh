@@ -15,6 +15,7 @@ srcdir="${builddir}/../ipxe/src/"
 embed_template="${builddir}/stage1_embed.cfg"
 embed="${builddir}/.stage1_embed.cfg.build"
 hddimg="${builddir}/images/ipxe.hdd.img"
+efifsimg="${builddir}/images/ipxe.efifs.img"
 mount="${builddir}/mnt"
 
 build_host=$(hostname --fqdn)
@@ -97,6 +98,9 @@ function cleanup(){
 			exit 1
 		fi
 	fi
+
+	echo "cleanup iso build directory"
+	[[ -d "${builddir}/isotemp" ]] && rm -rf "${builddir}/isotemp"
 }
 trap cleanup INT QUIT TERM EXIT
 
@@ -215,6 +219,20 @@ sudo losetup -d ${loopdev}
 chmod 444 "${hddimg}"
 
 # Done assembling hybrid EFI/BIOS bootable harddisk image
+
+echo "Generating Hybrid ISO image"
+
+echo "Extracting the EFI partition from the EFI HDD image"
+dd if="${hddimg}" of="${efifsimg}" bs=512 skip=4096
+
+echo "Extracting original iPXE ISO"
+mkdir -p "${builddir}/isotemp"
+cd "${builddir}/isotemp"
+7z -y x "${builddir}/images/ipxe-cdrom.iso"
+rm ./*BOOT*/*
+rmdir ./*BOOT*
+cp -v "${efifsimg}" .
+mkisofs -D -r -V "iPXE-Hybrid" -cache-inodes -J -l -joliet-long -b isolinux.bin -c boot.catalog -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e "$(basename "${efifsimg}")" -no-emul-boot -o "${builddir}/images/ipxe-uefi-hybrid-cdrom.iso" .
 
 # Additionally convert to qcow2 for Vbox/Qemu EFI booting
 if [[ -e "$(dirname "${hddimg}")/ipxe.hdd.qcow2" ]]
