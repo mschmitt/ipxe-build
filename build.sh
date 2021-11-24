@@ -22,6 +22,8 @@ build_host=$(hostname --fqdn)
 build_date=$(date '+%F %T %Z')
 build_rev=$(git rev-parse HEAD)
 
+mkdir -p "${builddir}/images/"
+
 # Replicate our own customizations into ipxe compile environment
 cp -v "${builddir}/config/general.h" "${srcdir}/config/local/general.h"
 cp -v "${builddir}/config/branding.h" "${srcdir}/config/local/branding.h"
@@ -35,31 +37,31 @@ set -e
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.pxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.pxe" "${builddir}/images/ipxe.pxe"
-sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
+[[ -d /srv/tftp ] && sudo cp -v "${builddir}/images/ipxe.pxe" /srv/tftp/
 
 # Build the UNDI pxe binary
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/undionly.kpxe EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/undionly.kpxe" "${builddir}/images/undionly.kpxe"
-sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
+[[ -d /srv/tftp ] && sudo cp -v "${builddir}/images/undionly.kpxe" /srv/tftp/
 
 # Build the Linux Kernel type image
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.lkrn EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.lkrn" "${builddir}/images/ipxe.lkrn"
-cp -v "${builddir}/images/ipxe.lkrn" /var/www/html/ipxe/
+[[ -d /var/www/html/ipxe ]] && cp -v "${builddir}/images/ipxe.lkrn" /var/www/html/ipxe/
 
 # Build the ISO image
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.iso EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.iso" "${builddir}/images/ipxe-cdrom.iso"
-cp -v "${builddir}/images/ipxe-cdrom.iso" /var/www/html/ipxe/
+[[ -d /var/www/html/ipxe ]] && cp -v "${builddir}/images/ipxe-cdrom.iso" /var/www/html/ipxe/
 
 # Build the USB image
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin/ipxe.usb EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin/ipxe.usb" "${builddir}/images/ipxe-usb.img"
-cp -v "${builddir}/images/ipxe-usb.img" /var/www/html/ipxe/
+[[ -d /var/www/html/ipxe ]] && cp -v "${builddir}/images/ipxe-usb.img" /var/www/html/ipxe/
 
 # Disable Linux Kernel type image so we can build the EFI image
 sed -i '/IMAGE_BZIMAGE/d' "${srcdir}/config/local/general.h"
@@ -68,7 +70,6 @@ sed -i '/IMAGE_BZIMAGE/d' "${srcdir}/config/local/general.h"
 make -C "${srcdir}" clean
 make -C "${srcdir}" bin-x86_64-efi/ipxe.efi EMBED="${embed}" DEBUG=${debug}
 cp -v "${srcdir}/bin-x86_64-efi/ipxe.efi" "${builddir}/images/ipxe.efi"
-cp -v "${builddir}/images/ipxe.efi" /var/www/html/ipxe/ipxe.efi
 
 set +e
 
@@ -232,7 +233,8 @@ cd "${builddir}/isotemp"
 rm ./*BOOT*/*
 rmdir ./*BOOT*
 cp -v "${efifsimg}" .
-mkisofs -D -r -V "iPXE-Hybrid" -cache-inodes -J -l -joliet-long -b isolinux.bin -c boot.catalog -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e "$(basename "${efifsimg}")" -no-emul-boot -o "${builddir}/images/ipxe-uefi-hybrid-cdrom.iso" .
+mkisofs -D -r -V "iPXE-Hybrid" -cache-inodes -J -l -joliet-long -b isolinux.bin -c boot.catalog -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e "$(basename "${efifsimg}")" -no-emul-boot -o "${builddir}/images/ipxe-hybrid.iso" .
+[[ -d /var/www/html/ipxe ]] && cp -v "${builddir}/images/ipxe-hybrid.iso" /var/www/html/ipxe/ipxe-hybrid.iso
 
 # Additionally convert to qcow2 for Vbox/Qemu EFI booting
 if [[ -e "$(dirname "${hddimg}")/ipxe.hdd.qcow2" ]]
