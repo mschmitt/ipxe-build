@@ -220,6 +220,7 @@ sudo losetup -d ${loopdev}
 chmod 444 "${hddimg}"
 
 # Done assembling hybrid EFI/BIOS bootable harddisk image
+[[ -d /var/www/html/ipxe ]] && cp -v "${hddimg}" /var/www/html/ipxe/
 
 echo "Generating Hybrid ISO image"
 
