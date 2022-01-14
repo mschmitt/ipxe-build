@@ -167,8 +167,7 @@ then
 fi
 
 echo "copy ${builddir}/images/ipxe.efi firmware"
-cp -v "${builddir}/images/ipxe.efi" "${mount}/EFI/BOOT/BOOTX64.EFI" &&
-  echo "FS0:\EFI\BOOT\BOOTX64.EFI" > "${mount}/startup.nsh"
+cp -v "${builddir}/images/ipxe.efi" "${mount}/EFI/BOOT/BOOTX64.EFI"
 if [[ $? -ne 0 ]]
 then
 	echo "Failed at copy ipxe.efi firmware."
