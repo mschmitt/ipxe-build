@@ -11,7 +11,7 @@ trap errorexit ERR
 MAKEOPTS="-j 4"
 debug=tls:0,x509:0,httpcore:0,tcp:0,ipv4:0,ipv6:0,arp:0,ndp:0,netdevice:0,pci:0
 builddir="$(dirname "$(readlink -f "$0")")"
-srcdir="${builddir}/../ipxe/src/"
+srcdir="${builddir}/submodules/ipxe/src/"
 embed_template="${builddir}/stage1_embed.cfg"
 embed="${builddir}/.stage1_embed.cfg.build"
 hddimg="${builddir}/images/ipxe.hdd.img"
