@@ -1,0 +1,26 @@
+name: Build-iPXE
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get tags
+      run: git fetch --tags origin
+    - name: Install dependencies
+      run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential git genisoimage qemu-utils p7zip-full liblzma-dev isolinux extlinux qemu-system-x86
+    - name: Update submodules
+      run: git submodule update --init --recursive --remote --merge
+    - name: Build iPXE
+      run: ./build.sh
+    - name: Store Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: iPXE-Images
+        path: images/*
