@@ -2,6 +2,8 @@ name: Build-iPXE
 
 on:
   push:
+    paths-ignore:
+    - 'stage2_chainload.cfg'
   workflow_dispatch:
 
 jobs:
